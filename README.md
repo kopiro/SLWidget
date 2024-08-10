@@ -1,6 +1,8 @@
 # SLWidget
 
-iOS widget that display next departures for SL traffic in Stockholm
+iOS widget that display next departures for SL traffic in Stockholm.
+
+![image](https://github.com/user-attachments/assets/6517740c-cb40-45e4-8fe3-3e9e3ad5267d)
 
 ## Find your variables
 
