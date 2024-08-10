@@ -33,12 +33,6 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     }
   }
 
-  // Used only to refresh widget
-  if (args.queryParameters.refresh) {
-    App.close();
-    return;
-  }
-
   const widget = new ListWidget();
   widget.useDefaultPadding();
   widget.backgroundColor = new Color("#44464C");
@@ -118,8 +112,15 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     Script.name()
   )}?refresh=true`;
 
-  widget.presentSmall();
+  if (config.runsInApp) {
+    widget.presentSmall();
+  }
 
   Script.setWidget(widget);
   Script.complete();
+
+  // Used only to refresh widget
+  if (args.queryParameters.refresh) {
+    App.close();
+  }
 };
