@@ -21,10 +21,16 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   }
 
   async function loadData() {
-    const url = `https://transport.integration.sl.se/v1/sites/${SITE_ID}/departures?transport=${TRANSPORT}&line=${LINE}&direction=${DIRECTION}&forecast=60`;
-    const req = new Request(url);
-    const json = await req.loadJSON();
-    return json;
+    try {
+      const url = `https://transport.integration.sl.se/v1/sites/${SITE_ID}/departures?transport=${TRANSPORT}&line=${LINE}&direction=${DIRECTION}&forecast=60`;
+      const req = new Request(url);
+      const json = await req.loadJSON();
+      const departures = json.departures.filter((e) => e.state !== "CANCELLED");
+      return departures;
+    } catch (err) {
+      console.error(err);
+      return { error: err };
+    }
   }
 
   // Used only to refresh widget
@@ -41,10 +47,13 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   viewStack.layoutVertically();
   viewStack.centerAlignContent();
 
-  const data = await loadData();
-  const departures = data.departures.filter((e) => e.state !== "CANCELLED");
+  const departures = await loadData();
 
-  if (departures.length === 0) {
+  if (departures.error) {
+    const error = viewStack.addText("Error fetching data");
+    error.font = Font.mediumSystemFont(22);
+    error.textColor = new Color("#FF0000");
+  } else if (departures.length === 0) {
     const error = viewStack.addText("No departures found");
     error.font = Font.mediumSystemFont(22);
     error.textColor = new Color("#FFFFFF");
