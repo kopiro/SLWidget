@@ -1,4 +1,4 @@
-module.exports.run = async (SITE_ID, TRANSPORT, LINE, DIRECTION) => {
+module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   // Used only to refresh widget
   if (args.queryParameters.refresh) {
     App.close();
