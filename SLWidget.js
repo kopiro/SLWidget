@@ -1,4 +1,4 @@
-module.exports.version = 3;
+module.exports.version = 4;
 
 module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   const SL_PRIMARY_COLOR = "#20252C";
