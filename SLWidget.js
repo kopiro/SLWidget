@@ -28,9 +28,15 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   async function loadData(siteId, transport, line, direction) {
     try {
-      const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?transport=${transport}&line=${line}&direction=${direction}&forecast=60`;
+      let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?`;
+
+      if (transport) url += `&transport=${transport}`;
+      if (line) url += `&line=${line}`;
+      if (direction) url += `&direction=${direction}`;
+
       const req = new Request(url);
       const json = await req.loadJSON();
+
       const departures = json.departures.filter((e) => e.state !== "CANCELLED");
       return departures;
     } catch (err) {

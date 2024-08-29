@@ -10,9 +10,11 @@ Open [https://transport.integration.sl.se/v1/sites?expand=true
 ](https://transport.integration.sl.se/v1/sites?expand=true
 ) to find your departure location and keep note of its `id`; this is your `SITE_ID`.
 
+The only mandatory option is `SITE_ID`, all the rest is optional only if you want to filter even more.
+
 `TRANSPORT` can be one of these: `BUS`, `TRAM`, `METRO`, `TRAIN`, `FERRY`, `SHIP`, `TAXI`.
 
-`LINE` is your line number.
+`LINE` is your Metro line or BUS number.
 
 `DIRECTION` can either be `1` or `2`, most likely `1`.
 
