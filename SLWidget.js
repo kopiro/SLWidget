@@ -1,9 +1,154 @@
-async function getModule(scriptUrl) {
-  const fm = FileManager.local();
-  let scriptPath = module.filename;
-  let scriptDir = scriptPath.replace(fm.fileName(scriptPath, true), "");
+module.exports.version = 3;
 
-  const mainScriptPath = fm.joinPath(scriptDir, "main.js");
+module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
+  const SL_PRIMARY_COLOR = "#20252C";
+  const SL_PRIMARY_COLOR_DARKER = "#13151A";
+  const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
+
+  function getIconForTransport(transport) {
+    switch (transport) {
+      case "BUS":
+        return "🚌";
+      case "TRAM":
+        return "🚋";
+      case "METRO":
+        return "🚇";
+      case "TRAIN":
+        return "🚆";
+      case "FERRY":
+        return "⛴";
+      case "SHIP":
+        return "🚢";
+      case "TAXI":
+        return "🚕";
+      default:
+        return "🚦";
+    }
+  }
+
+  async function loadData(siteId, transport, line, direction) {
+    try {
+      const url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?transport=${transport}&line=${line}&direction=${direction}&forecast=60`;
+      const req = new Request(url);
+      const json = await req.loadJSON();
+      const departures = json.departures.filter((e) => e.state !== "CANCELLED");
+      return departures;
+    } catch (err) {
+      console.error(err);
+      return { error: err };
+    }
+  }
+
+  const widget = new ListWidget();
+  widget.useDefaultPadding();
+
+  // Gradient
+  let gradient = new LinearGradient();
+  gradient.colors = [
+    new Color(SL_PRIMARY_COLOR_DARKER),
+    new Color(SL_PRIMARY_COLOR),
+  ];
+  gradient.locations = [0.0, 1.0];
+  widget.backgroundGradient = gradient;
+
+  const viewStack = widget.addStack();
+  viewStack.layoutVertically();
+  viewStack.centerAlignContent();
+
+  const departures = await loadData(SITE_ID, TRANSPORT, LINE, DIRECTION);
+
+  if (departures.error) {
+    const error = viewStack.addText("Error fetching data");
+    error.font = Font.mediumSystemFont(22);
+    error.textColor = new Color("#FF0000");
+  } else if (departures.length === 0) {
+    const error = viewStack.addText("No departures found");
+    error.font = Font.mediumSystemFont(22);
+    error.textColor = new Color("#FFFFFF");
+  } else {
+    const first = departures[0];
+
+    widget.refreshAfterDate = new Date(first.expected);
+
+    const departure = viewStack.addText(
+      `${getIconForTransport(TRANSPORT)} ${first.stop_area.name}`
+    );
+    departure.font = Font.mediumSystemFont(12);
+    departure.textColor = new Color("#FFFFFF");
+
+    const destination = viewStack.addText(
+      `${first.line.designation} to ${first.destination}`
+    );
+    destination.font = Font.mediumSystemFont(12);
+    destination.textColor = new Color("#FFFFFF");
+
+    viewStack.addSpacer(4);
+
+    let i = 0;
+    for (const d of departures) {
+      const display = viewStack.addDate(new Date(d.expected));
+      display.font = Font.boldSystemFont(38 - i * i * 16);
+      display.textColor = new Color("#FFFFFF");
+      display.applyTimeStyle();
+
+      const expected = new Date(d.expected) / (1000 * 60);
+      const scheduled = new Date(d.scheduled) / (1000 * 60);
+
+      if (expected - scheduled > 2) {
+        display.textColor = new Color("#F92772");
+      } else if (expected - scheduled > 1) {
+        display.textColor = new Color("#E6DC74");
+      } else {
+        display.textColor = new Color("#FFFFFF");
+      }
+
+      if (++i >= 2) break;
+    }
+
+    viewStack.addSpacer(8);
+
+    // Add last updated to
+    const hStack = widget.addStack();
+    hStack.layoutHorizontally();
+
+    const label = hStack.addText("⏳ ");
+    label.font = Font.mediumSystemFont(8);
+    label.textColor = new Color("#FFFFFF");
+
+    const update = hStack.addDate(new Date());
+    update.applyRelativeStyle();
+    update.font = Font.mediumSystemFont(8);
+    update.textColor = new Color("#FFFFFF");
+  }
+
+  // Override what the script does
+  widget.url = `scriptable:///run/${encodeURIComponent(
+    Script.name()
+  )}?refresh=true`;
+
+  if (config.runsInApp) {
+    widget.presentSmall();
+  }
+
+  Script.setWidget(widget);
+  Script.complete();
+
+  // Used only to refresh widget
+  if (args.queryParameters.refresh) {
+    App.close();
+  }
+};
+
+async function getModule(scriptUrl) {
+  const $mainModule = {
+    present: module.exports.present,
+    version: module.exports.version,
+  };
+
+  const fm = FileManager.local();
+  const mainScriptPath = module.filename;
+  const scriptName = fm.fileName(mainScriptPath, true);
+  const scriptDir = mainScriptPath.replace(scriptName, "");
 
   const today = new Date().toISOString().split("T")[0].replace(/-/g, "");
 
@@ -13,8 +158,6 @@ async function getModule(scriptUrl) {
     upgradeDirectoryPath,
     upgradeMainScriptFileName
   );
-
-  const $mainModule = importModule(mainScriptPath);
 
   try {
     if (!fm.fileExists(upgradeDirectoryPath)) {
@@ -51,9 +194,9 @@ async function getModule(scriptUrl) {
     // Replace content and upgrade version
     fm.remove(mainScriptPath);
     fm.copy(upgradedMainScriptPath, mainScriptPath);
-    console.log("Upgrade successful");
+    console.log("Upgrade successful, will run next time");
 
-    return importModule(mainScriptPath);
+    return $mainModule;
   } catch (err) {
     console.error("Error happened during upgrade");
     console.error(err);
@@ -73,8 +216,8 @@ async function getModule(scriptUrl) {
 
 module.exports.run = async (args) => {
   // download and import library
-  let module = await getModule(
+  let widget = await getModule(
     "https://raw.githubusercontent.com/kopiro/SLWidget/main/main.js"
   );
-  await module.run(args);
+  await widget.present(args);
 };

@@ -38,7 +38,3 @@ await module.run({
 
 4. Run the script to check that everything is working
 5. Go to iOS home page and add a Scriptable widget; select your script and make sure you select "Run script" on "When Interacting" 
-
-## Update
-
-Just replace the content of `SLWidget.js` with the new code, keeping all your widgets with your variables intact.
