@@ -1,6 +1,10 @@
-module.exports.version = 2;
+module.exports.version = 3;
 
 module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
+  const SL_PRIMARY_COLOR = "#20252C";
+  const SL_PRIMARY_COLOR_DARKER = "#13151A";
+  const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
+
   function getIconForTransport(transport) {
     switch (transport) {
       case "BUS":
@@ -40,7 +44,10 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   // Gradient
   let gradient = new LinearGradient();
-  gradient.colors = [new Color("#1E1F1C"), new Color("#414339")];
+  gradient.colors = [
+    new Color(SL_PRIMARY_COLOR_DARKER),
+    new Color(SL_PRIMARY_COLOR),
+  ];
   gradient.locations = [0.0, 1.0];
   widget.backgroundGradient = gradient;
 
@@ -92,7 +99,7 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
       } else if (expected - scheduled > 1) {
         display.textColor = new Color("#E6DC74");
       } else {
-        display.textColor = new Color("#A0D832");
+        display.textColor = new Color("#FFFFFF");
       }
 
       if (++i >= 2) break;

@@ -8,9 +8,10 @@ async function getModule(scriptUrl) {
   const today = new Date().toISOString().split("T")[0].replace(/-/g, "");
 
   const upgradeDirectoryPath = fm.joinPath(scriptDir, ".upgrades");
+  const upgradeMainScriptFileName = today + ".js";
   const upgradedMainScriptPath = fm.joinPath(
     upgradeDirectoryPath,
-    today + ".js"
+    upgradeMainScriptFileName
   );
 
   const $mainModule = importModule(mainScriptPath);
@@ -49,17 +50,21 @@ async function getModule(scriptUrl) {
 
     // Replace content and upgrade version
     fm.remove(mainScriptPath);
-    fm.move(upgradedMainScriptPath, mainScriptPath);
+    fm.copy(upgradedMainScriptPath, mainScriptPath);
     console.log("Upgrade successful");
 
-    return $updatedModule;
+    return importModule(mainScriptPath);
   } catch (err) {
     console.error("Error happened during upgrade");
     console.error(err);
   } finally {
-    if (fm.fileExists(upgradedMainScriptPath)) {
-      console.log(`Cleaning up ${upgradedMainScriptPath}`);
-      fm.remove(upgradedMainScriptPath);
+    // Cleanup all other upgrades
+    const upgrades = fm.listContents(upgradeDirectoryPath);
+    for (const upgradeFileName of upgrades) {
+      if (upgradeFileName !== upgradeMainScriptFileName) {
+        console.log(`Removing old upgrade: ${upgradeFileName}`);
+        fm.remove(fm.joinPath(upgradeDirectoryPath, upgradeFileName));
+      }
     }
   }
 
