@@ -1,126 +1,75 @@
-module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
-  function getIconForTransport() {
-    switch (TRANSPORT) {
-      case "BUS":
-        return "🚌";
-      case "TRAM":
-        return "🚋";
-      case "METRO":
-        return "🚇";
-      case "TRAIN":
-        return "🚆";
-      case "FERRY":
-        return "⛴";
-      case "SHIP":
-        return "🚢";
-      case "TAXI":
-        return "🚕";
-      default:
-        return "🚦";
+async function getModule(scriptUrl) {
+  const fm = FileManager.local();
+  let scriptPath = module.filename;
+  let scriptDir = scriptPath.replace(fm.fileName(scriptPath, true), "");
+
+  const mainScriptPath = fm.joinPath(scriptDir, "main.js");
+
+  const today = new Date().toISOString().split("T")[0].replace(/-/g, "");
+
+  const upgradeDirectoryPath = fm.joinPath(scriptDir, ".upgrades");
+  const upgradedMainScriptPath = fm.joinPath(
+    upgradeDirectoryPath,
+    today + ".js"
+  );
+
+  const $mainModule = importModule(mainScriptPath);
+
+  try {
+    if (!fm.fileExists(upgradeDirectoryPath)) {
+      fm.createDirectory(upgradeDirectoryPath);
     }
-  }
 
-  async function loadData() {
-    try {
-      const url = `https://transport.integration.sl.se/v1/sites/${SITE_ID}/departures?transport=${TRANSPORT}&line=${LINE}&direction=${DIRECTION}&forecast=60`;
-      const req = new Request(url);
-      const json = await req.loadJSON();
-      const departures = json.departures.filter((e) => e.state !== "CANCELLED");
-      return departures;
-    } catch (err) {
-      console.error(err);
-      return { error: err };
+    if (fm.fileExists(upgradedMainScriptPath)) {
+      console.log(`Upgrade ${upgradedMainScriptPath} already downloaded`);
+      return $mainModule;
     }
-  }
 
-  const widget = new ListWidget();
-  widget.useDefaultPadding();
-  widget.backgroundColor = new Color("#44464C");
+    console.log(`Downloading possible upgrade to ${upgradedMainScriptPath}`);
 
-  const viewStack = widget.addStack();
-  viewStack.layoutVertically();
-  viewStack.centerAlignContent();
+    let req = new Request(scriptUrl);
+    let scriptContent = await req.load();
+    fm.write(upgradedMainScriptPath, scriptContent);
 
-  const departures = await loadData();
+    // Try to load the module now
+    if (!fm.fileExists(upgradedMainScriptPath)) {
+      throw new Error("Unable to download file");
+    }
 
-  if (departures.error) {
-    const error = viewStack.addText("Error fetching data");
-    error.font = Font.mediumSystemFont(22);
-    error.textColor = new Color("#FF0000");
-  } else if (departures.length === 0) {
-    const error = viewStack.addText("No departures found");
-    error.font = Font.mediumSystemFont(22);
-    error.textColor = new Color("#FFFFFF");
-  } else {
-    const first = departures[0];
+    let $updatedModule = importModule(upgradedMainScriptPath);
 
-    widget.refreshAfterDate = new Date(first.expected);
-
-    const departure = viewStack.addText(
-      `${getIconForTransport(TRANSPORT)} ${first.stop_area.name}`
+    console.log(
+      `Current version: ${$mainModule.version}, upgraded version: ${$updatedModule.version}`
     );
-    departure.font = Font.mediumSystemFont(12);
-    departure.textColor = new Color("#FFFFFF");
 
-    const destination = viewStack.addText(
-      `${first.line.designation} to ${first.destination}`
-    );
-    destination.font = Font.mediumSystemFont(12);
-    destination.textColor = new Color("#FFFFFF");
-
-    viewStack.addSpacer(4);
-
-    let i = 0;
-    for (const d of departures) {
-      const display = viewStack.addDate(new Date(d.expected));
-      display.font = Font.boldSystemFont(38 - i * i * 16);
-      display.textColor = new Color("#FFFFFF");
-      display.applyTimeStyle();
-
-      const expected = new Date(d.expected) / (1000 * 60);
-      const scheduled = new Date(d.scheduled) / (1000 * 60);
-
-      if (expected - scheduled > 2) {
-        display.textColor = new Color("#FF0000");
-      } else if (expected - scheduled > 1) {
-        display.textColor = new Color("#FFFF00");
-      } else {
-        display.textColor = new Color("#00FF00");
-      }
-
-      if (++i >= 2) break;
+    if (($mainModule.version || 0) >= ($updatedModule.version || 0)) {
+      console.log(`Upgrade is not needed`);
+      return $mainModule;
     }
 
-    viewStack.addSpacer(8);
+    // Replace content and upgrade version
+    fm.remove(mainScriptPath);
+    fm.move(upgradedMainScriptPath, mainScriptPath);
+    console.log("Upgrade successful");
 
-    // Add last updated to
-    const hStack = widget.addStack();
-    hStack.layoutHorizontally();
-
-    const label = hStack.addText("⏳ ");
-    label.font = Font.mediumSystemFont(8);
-    label.textColor = new Color("#FFFFFF");
-
-    const update = hStack.addDate(new Date());
-    update.applyRelativeStyle();
-    update.font = Font.mediumSystemFont(8);
-    update.textColor = new Color("#FFFFFF");
+    return $updatedModule;
+  } catch (err) {
+    console.error("Error happened during upgrade");
+    console.error(err);
+  } finally {
+    if (fm.fileExists(upgradedMainScriptPath)) {
+      console.log(`Cleaning up ${upgradedMainScriptPath}`);
+      fm.remove(upgradedMainScriptPath);
+    }
   }
 
-  // Override what the script does
-  widget.url = `scriptable:///run/${encodeURIComponent(
-    Script.name()
-  )}?refresh=true`;
+  return $mainModule;
+}
 
-  if (config.runsInApp) {
-    widget.presentSmall();
-  }
-
-  Script.setWidget(widget);
-  Script.complete();
-
-  // Used only to refresh widget
-  if (args.queryParameters.refresh) {
-    App.close();
-  }
+module.exports.run = async (args) => {
+  // download and import library
+  let module = await getModule(
+    "https://raw.githubusercontent.com/kopiro/SLWidget/main/main.js"
+  );
+  await module.run(args);
 };
