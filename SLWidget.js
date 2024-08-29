@@ -223,7 +223,7 @@ async function getModule(scriptUrl) {
 module.exports.run = async (args) => {
   // download and import library
   let widget = await getModule(
-    "https://raw.githubusercontent.com/kopiro/SLWidget/main/main.js"
+    "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js"
   );
   await widget.present(args);
 };
