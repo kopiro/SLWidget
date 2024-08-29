@@ -148,11 +148,15 @@ async function getModule(scriptUrl) {
   const fm = FileManager.local();
   const mainScriptPath = module.filename;
   const scriptName = fm.fileName(mainScriptPath, true);
+  const scriptNameNoExt = fm.fileName(mainScriptPath, false);
   const scriptDir = mainScriptPath.replace(scriptName, "");
 
   const today = new Date().toISOString().split("T")[0].replace(/-/g, "");
 
-  const upgradeDirectoryPath = fm.joinPath(scriptDir, ".upgrades");
+  const upgradeDirectoryPath = fm.joinPath(
+    scriptDir,
+    `.upgrades-${scriptNameNoExt}`
+  );
   const upgradeMainScriptFileName = today + ".js";
   const upgradedMainScriptPath = fm.joinPath(
     upgradeDirectoryPath,
@@ -202,11 +206,13 @@ async function getModule(scriptUrl) {
     console.error(err);
   } finally {
     // Cleanup all other upgrades
-    const upgrades = fm.listContents(upgradeDirectoryPath);
-    for (const upgradeFileName of upgrades) {
-      if (upgradeFileName !== upgradeMainScriptFileName) {
-        console.log(`Removing old upgrade: ${upgradeFileName}`);
-        fm.remove(fm.joinPath(upgradeDirectoryPath, upgradeFileName));
+    if (fm.fileExists(upgradeDirectoryPath)) {
+      const upgrades = fm.listContents(upgradeDirectoryPath);
+      for (const upgradeFileName of upgrades) {
+        if (upgradeFileName !== upgradeMainScriptFileName) {
+          console.log(`Removing old upgrade: ${upgradeFileName}`);
+          fm.remove(fm.joinPath(upgradeDirectoryPath, upgradeFileName));
+        }
       }
     }
   }
