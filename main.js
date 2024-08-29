@@ -1,4 +1,4 @@
-module.exports.version = 1;
+module.exports.version = 2;
 
 module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   function getIconForTransport(transport) {
@@ -37,7 +37,12 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   const widget = new ListWidget();
   widget.useDefaultPadding();
-  widget.backgroundColor = new Color("#44464C");
+
+  // Gradient
+  let gradient = new LinearGradient();
+  gradient.colors = [new Color("#1E1F1C"), new Color("#414339")];
+  gradient.locations = [0.0, 1.0];
+  widget.backgroundGradient = gradient;
 
   const viewStack = widget.addStack();
   viewStack.layoutVertically();
@@ -83,11 +88,11 @@ module.exports.run = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
       const scheduled = new Date(d.scheduled) / (1000 * 60);
 
       if (expected - scheduled > 2) {
-        display.textColor = new Color("#FF0000");
+        display.textColor = new Color("#F92772");
       } else if (expected - scheduled > 1) {
-        display.textColor = new Color("#FFFF00");
+        display.textColor = new Color("#E6DC74");
       } else {
-        display.textColor = new Color("#00FF00");
+        display.textColor = new Color("#A0D832");
       }
 
       if (++i >= 2) break;
