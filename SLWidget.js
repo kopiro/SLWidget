@@ -1,4 +1,4 @@
-module.exports.version = 4;
+module.exports.version = 5;
 
 module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   const SL_PRIMARY_COLOR = "#20252C";
@@ -28,7 +28,7 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   async function loadData(siteId, transport, line, direction) {
     try {
-      let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?`;
+      let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?forecast=60`;
 
       if (transport) url += `&transport=${transport}`;
       if (line) url += `&line=${line}`;
@@ -108,23 +108,10 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
         display.textColor = new Color("#FFFFFF");
       }
 
-      if (++i >= 2) break;
+      if (++i >= 3) break;
     }
 
     viewStack.addSpacer(8);
-
-    // Add last updated to
-    const hStack = widget.addStack();
-    hStack.layoutHorizontally();
-
-    const label = hStack.addText("⏳ ");
-    label.font = Font.mediumSystemFont(8);
-    label.textColor = new Color("#FFFFFF");
-
-    const update = hStack.addDate(new Date());
-    update.applyRelativeStyle();
-    update.font = Font.mediumSystemFont(8);
-    update.textColor = new Color("#FFFFFF");
   }
 
   // Override what the script does
