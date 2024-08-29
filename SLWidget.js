@@ -93,7 +93,7 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     let i = 0;
     for (const d of departures) {
       const display = viewStack.addDate(new Date(d.expected));
-      display.font = Font.boldSystemFont(38 - i * i * 16);
+      display.font = Font.boldSystemFont(32 - i * 12);
       display.textColor = new Color("#FFFFFF");
       display.applyTimeStyle();
 
