@@ -2,7 +2,8 @@
 
 iOS widget that display next departures for SL traffic in Stockholm.
 
-<img width="714" alt="image" src="https://github.com/user-attachments/assets/a0c25a05-8699-4694-aa3c-8965281822c8">
+![IMG_5216](https://github.com/user-attachments/assets/0c4eac45-63c3-45ed-87fd-d668928938ca)
+
 
 ## Find your variables
 
