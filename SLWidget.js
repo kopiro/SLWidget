@@ -1,8 +1,8 @@
-module.exports.version = 5;
+module.exports.version = 6;
 
 module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   const SL_PRIMARY_COLOR = "#20252C";
-  const SL_PRIMARY_COLOR_DARKER = "#13151A";
+  const SL_PRIMARY_COLOR_DARKER = "#070809";
   const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
 
   function getIconForTransport(transport) {
@@ -55,6 +55,8 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     new Color(SL_PRIMARY_COLOR),
   ];
   gradient.locations = [0.0, 1.0];
+  gradient.startPoint = new Point(0, 0);
+  gradient.endPoint = new Point(0, 1);
   widget.backgroundGradient = gradient;
 
   const viewStack = widget.addStack();
@@ -65,36 +67,51 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   if (departures.error) {
     const error = viewStack.addText("Error fetching data");
-    error.font = Font.mediumSystemFont(22);
+    error.font = Font.boldSystemFont(22);
     error.textColor = new Color("#FF0000");
   } else if (departures.length === 0) {
     const error = viewStack.addText("No departures found");
-    error.font = Font.mediumSystemFont(22);
+    error.font = Font.boldSystemFont(22);
     error.textColor = new Color("#FFFFFF");
   } else {
     const first = departures[0];
 
     widget.refreshAfterDate = new Date(first.expected);
 
-    const departure = viewStack.addText(
-      `${getIconForTransport(TRANSPORT)} ${first.stop_area.name}`
-    );
+    const header = viewStack.addStack();
+    header.layoutHorizontally();
+    header.bottomAlignContent();
+
+    const icon = header.addText(getIconForTransport(TRANSPORT));
+    icon.font = Font.mediumSystemFont(28);
+    icon.textColor = new Color("#FFFFFF");
+
+    header.addSpacer(2);
+
+    const headerView = header.addStack();
+    headerView.layoutVertically();
+
+    const departure = headerView.addText(first.stop_area.name);
     departure.font = Font.mediumSystemFont(12);
     departure.textColor = new Color("#FFFFFF");
+    departure.textOpacity = 0.8;
 
-    const destination = viewStack.addText(
-      `${first.line.designation} to ${first.destination}`
+    const destination = headerView.addText(
+      `${first.line.designation} / ${first.destination}`
     );
     destination.font = Font.mediumSystemFont(12);
     destination.textColor = new Color("#FFFFFF");
+    destination.textOpacity = 0.8;
 
-    viewStack.addSpacer(4);
+    viewStack.addSpacer(10);
 
     let i = 0;
     for (const d of departures) {
       const display = viewStack.addDate(new Date(d.expected));
-      display.font = Font.boldSystemFont(32 - i * 12);
-      display.textColor = new Color("#FFFFFF");
+      const fontSize = i === 0 ? 32 : i === 1 ? 22 : 18;
+      display.font = Font.blackSystemFont(fontSize);
+      display.textOpacity = i === 0 ? 1 : 0.7;
+      display.lineLimit = 1;
       display.applyTimeStyle();
 
       const expected = new Date(d.expected) / (1000 * 60);
@@ -108,10 +125,12 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
         display.textColor = new Color("#FFFFFF");
       }
 
+      if (i === 0) {
+        viewStack.addSpacer(2);
+      }
+
       if (++i >= 3) break;
     }
-
-    viewStack.addSpacer(8);
   }
 
   // Override what the script does
