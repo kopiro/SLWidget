@@ -1,4 +1,4 @@
-module.exports.version = 7;
+module.exports.version = 8;
 
 module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   const SL_PRIMARY_COLOR = "#20252C";
@@ -113,7 +113,7 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     let i = 0;
     for (const d of departures) {
       const display = viewStack.addDate(new Date(d.expected));
-      const fontSize = i === 0 ? 38 - (usesAMPM ? 8 : 0) : i === 1 ? 22 : 18;
+      const fontSize = i === 0 ? 38 - (usesAMPM ? 10 : 0) : i === 1 ? 22 : 18;
 
       display.font = Font.blackSystemFont(fontSize);
       display.textOpacity = i === 0 ? 1 : 0.7;
