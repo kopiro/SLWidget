@@ -1,4 +1,4 @@
-module.exports.version = 8;
+module.exports.version = 9;
 
 module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   const SL_PRIMARY_COLOR = "#20252C";
@@ -72,11 +72,11 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   if (departures.error) {
     const error = viewStack.addText("Error fetching data");
-    error.font = Font.boldSystemFont(22);
+    error.font = Font.boldSystemFont(16);
     error.textColor = new Color("#FF0000");
   } else if (departures.length === 0) {
     const error = viewStack.addText("No departures found");
-    error.font = Font.boldSystemFont(22);
+    error.font = Font.boldSystemFont(16);
     error.textColor = new Color("#FFFFFF");
   } else {
     const first = departures[0];
@@ -113,7 +113,7 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     let i = 0;
     for (const d of departures) {
       const display = viewStack.addDate(new Date(d.expected));
-      const fontSize = i === 0 ? 38 - (usesAMPM ? 10 : 0) : i === 1 ? 22 : 18;
+      const fontSize = i === 0 ? 38 - (usesAMPM ? 12 : 0) : i === 1 ? 22 : 18;
 
       display.font = Font.blackSystemFont(fontSize);
       display.textOpacity = i === 0 ? 1 : 0.7;
