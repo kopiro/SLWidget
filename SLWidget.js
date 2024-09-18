@@ -1,9 +1,19 @@
-module.exports.version = 9;
+module.exports.upgradeUrl =
+  "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js";
 
-module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
+module.exports.version = 10;
+
+module.exports.present = async ({
+  SITE_ID,
+  DESTINATION_NAME,
+  TRANSPORT,
+  LINE,
+  DIRECTION,
+}) => {
   const SL_PRIMARY_COLOR = "#20252C";
   const SL_PRIMARY_COLOR_DARKER = "#070809";
   const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
+  const ARGS_INTERACTED = "interacted";
 
   // Get OS hour format (12 or 24)
   const dateFormatter = new DateFormatter();
@@ -31,7 +41,28 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
     }
   }
 
-  async function loadData(siteId, transport, line, direction) {
+  function getSwedishNameForTransport(transport) {
+    switch (transport) {
+      case "BUS":
+        return "bus station";
+      case "TRAM":
+        return "spårvagn";
+      case "METRO":
+        return "t-bana";
+      case "TRAIN":
+        return "pendeltåg";
+      case "FERRY":
+        return "färja";
+      case "SHIP":
+        return "båt";
+      case "TAXI":
+        return "taxi";
+      default:
+        return "transport";
+    }
+  }
+
+  async function loadDirectionsData(siteId, transport, line, direction) {
     try {
       let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?forecast=60`;
 
@@ -64,18 +95,23 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
   gradient.endPoint = new Point(0, 1);
   widget.backgroundGradient = gradient;
 
-  const viewStack = widget.addStack();
-  viewStack.layoutVertically();
-  viewStack.centerAlignContent();
+  const $viewStack = widget.addStack();
+  $viewStack.layoutVertically();
+  $viewStack.centerAlignContent();
 
-  const departures = await loadData(SITE_ID, TRANSPORT, LINE, DIRECTION);
+  const departures = await loadDirectionsData(
+    SITE_ID,
+    TRANSPORT,
+    LINE,
+    DIRECTION
+  );
 
   if (departures.error) {
-    const error = viewStack.addText("Error fetching data");
+    const error = $viewStack.addText("Error fetching data");
     error.font = Font.boldSystemFont(16);
     error.textColor = new Color("#FF0000");
   } else if (departures.length === 0) {
-    const error = viewStack.addText("No departures found");
+    const error = $viewStack.addText("No departures found");
     error.font = Font.boldSystemFont(16);
     error.textColor = new Color("#FFFFFF");
   } else {
@@ -83,66 +119,103 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
     widget.refreshAfterDate = new Date(first.expected);
 
-    const header = viewStack.addStack();
-    header.layoutHorizontally();
-    header.bottomAlignContent();
+    const $header = $viewStack.addStack();
+    $header.layoutHorizontally();
+    $header.bottomAlignContent();
 
-    const icon = header.addText(getIconForTransport(TRANSPORT));
-    icon.font = Font.mediumSystemFont(28);
-    icon.textColor = new Color("#FFFFFF");
+    const $icon = $header.addText(getIconForTransport(TRANSPORT));
+    $icon.font = Font.mediumSystemFont(28);
+    $icon.textColor = new Color("#FFFFFF");
 
-    header.addSpacer(2);
+    $header.addSpacer(2);
 
-    const headerView = header.addStack();
-    headerView.layoutVertically();
+    const $headerView = $header.addStack();
+    $headerView.layoutVertically();
 
-    const departure = headerView.addText(first.stop_area.name);
-    departure.font = Font.mediumSystemFont(12);
-    departure.textColor = new Color("#FFFFFF");
-    departure.textOpacity = 0.8;
+    const $departure = $headerView.addText(first.stop_area.name);
+    $departure.font = Font.mediumSystemFont(12);
+    $departure.textColor = new Color("#FFFFFF");
+    $departure.textOpacity = 0.8;
 
-    const destination = headerView.addText(
+    const $destination = $headerView.addText(
       `${first.line.designation} / ${first.destination}`
     );
-    destination.font = Font.mediumSystemFont(12);
-    destination.textColor = new Color("#FFFFFF");
-    destination.textOpacity = 0.8;
+    $destination.font = Font.mediumSystemFont(12);
+    $destination.textColor = new Color("#FFFFFF");
+    $destination.textOpacity = 0.8;
 
-    viewStack.addSpacer(10);
+    $viewStack.addSpacer(10);
 
     let i = 0;
     for (const d of departures) {
-      const display = viewStack.addDate(new Date(d.expected));
+      const $display = $viewStack.addDate(new Date(d.expected));
       const fontSize = i === 0 ? 38 - (usesAMPM ? 12 : 0) : i === 1 ? 22 : 18;
 
-      display.font = Font.blackSystemFont(fontSize);
-      display.textOpacity = i === 0 ? 1 : 0.7;
-      display.lineLimit = 1;
-      display.applyTimeStyle();
+      $display.font = Font.blackSystemFont(fontSize);
+      $display.textOpacity = i === 0 ? 1 : 0.7;
+      $display.lineLimit = 1;
+      $display.applyTimeStyle();
 
       const expected = new Date(d.expected) / (1000 * 60);
       const scheduled = new Date(d.scheduled) / (1000 * 60);
 
       if (expected - scheduled > 2) {
-        display.textColor = new Color("#F92772");
+        $display.textColor = new Color("#F92772");
       } else if (expected - scheduled > 1) {
-        display.textColor = new Color("#E6DC74");
+        $display.textColor = new Color("#E6DC74");
       } else {
-        display.textColor = new Color("#FFFFFF");
+        $display.textColor = new Color("#FFFFFF");
       }
 
       if (i === 0) {
-        viewStack.addSpacer(2);
+        $viewStack.addSpacer(2);
       }
 
       if (++i >= 3) break;
     }
   }
 
+  // Used only to refresh widget
+  if (args.queryParameters[ARGS_INTERACTED]) {
+    // Create a prompt to show to the user
+    const prompt = new Alert();
+    prompt.title = `SL Widget v${module.exports.version}`;
+
+    prompt.addAction("Refresh time");
+    prompt.addAction(`Upgrade widget to latest`);
+    if (departures.length > 0) {
+      prompt.addAction("Maps Directions");
+      prompt.addAction("Check departures");
+    }
+    prompt.addCancelAction("Close");
+
+    const actionIndex = await prompt.present();
+
+    if (actionIndex === 0) {
+      App.close();
+    } else if (actionIndex === 1) {
+      await getModule(true);
+      App.close();
+    } else if (actionIndex === 2) {
+      const daddr = DESTINATION_NAME || departures[0].destination;
+      const saddr = departures[0].stop_area.name;
+      Safari.open(
+        `https://maps.google.com/?daddr=${encodeURIComponent(
+          daddr
+        )}&saddr=${encodeURIComponent(saddr)}&directionsmode=transit`
+      );
+    } else if (actionIndex === 3) {
+      const q = `${departures[0].stop_area.name} ${getSwedishNameForTransport(
+        TRANSPORT
+      )}`;
+      Safari.open(`https://maps.google.com/?q=${encodeURIComponent(q)}`);
+    }
+  }
+
   // Override what the script does
   widget.url = `scriptable:///run/${encodeURIComponent(
     Script.name()
-  )}?refresh=true`;
+  )}?${ARGS_INTERACTED}=1`;
 
   if (config.runsInApp) {
     widget.presentSmall();
@@ -150,14 +223,11 @@ module.exports.present = async ({ SITE_ID, TRANSPORT, LINE, DIRECTION }) => {
 
   Script.setWidget(widget);
   Script.complete();
-
-  // Used only to refresh widget
-  if (args.queryParameters.refresh) {
-    App.close();
-  }
 };
 
-async function getModule(scriptUrl) {
+async function getModule(forceUpgrade = false) {
+  const scriptUrl = module.exports.upgradeUrl;
+
   const $mainModule = {
     present: module.exports.present,
     version: module.exports.version,
@@ -173,13 +243,18 @@ async function getModule(scriptUrl) {
 
   const upgradeDirectoryPath = fm.joinPath(
     scriptDir,
-    `.upgrades-${scriptNameNoExt}`
+    `_upgrades_${scriptNameNoExt}`
   );
   const upgradeMainScriptFileName = today + ".js";
   const upgradedMainScriptPath = fm.joinPath(
     upgradeDirectoryPath,
     upgradeMainScriptFileName
   );
+
+  if (forceUpgrade && fm.fileExists(upgradedMainScriptPath)) {
+    console.log("Removing today's upgrade");
+    fm.remove(upgradedMainScriptPath);
+  }
 
   try {
     if (!fm.fileExists(upgradeDirectoryPath)) {
@@ -220,7 +295,7 @@ async function getModule(scriptUrl) {
 
     return $mainModule;
   } catch (err) {
-    console.error("Error happened during upgrade");
+    alert(`Error during upgrade: ${err}`);
     console.error(err);
   } finally {
     // Cleanup all other upgrades
@@ -238,10 +313,8 @@ async function getModule(scriptUrl) {
   return $mainModule;
 }
 
-module.exports.run = async (args) => {
+module.exports.run = async (args = {}) => {
   // download and import library
-  let widget = await getModule(
-    "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js"
-  );
+  let widget = await getModule();
   await widget.present(args);
 };
