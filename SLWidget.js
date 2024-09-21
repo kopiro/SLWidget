@@ -1,15 +1,71 @@
-module.exports.upgradeUrl =
-  "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js";
+function getIconForTransport(transport) {
+  switch (transport) {
+    case "BUS":
+      return "🚌";
+    case "TRAM":
+      return "🚋";
+    case "METRO":
+      return "🚇";
+    case "TRAIN":
+      return "🚆";
+    case "FERRY":
+      return "⛴";
+    case "SHIP":
+      return "🚢";
+    case "TAXI":
+      return "🚕";
+    default:
+      return "🚦";
+  }
+}
 
-module.exports.version = 10;
+function getSwedishNameForTransport(transport) {
+  switch (transport) {
+    case "BUS":
+      return "bus station";
+    case "TRAM":
+      return "spårvagn";
+    case "METRO":
+      return "t-bana";
+    case "TRAIN":
+      return "pendeltåg";
+    case "FERRY":
+      return "färja";
+    case "SHIP":
+      return "båt";
+    case "TAXI":
+      return "taxi";
+    default:
+      return "transport";
+  }
+}
 
-module.exports.present = async ({
+async function loadDirectionsData(siteId, transport, line, direction) {
+  try {
+    let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?forecast=60`;
+
+    if (transport) url += `&transport=${transport}`;
+    if (line) url += `&line=${line}`;
+    if (direction) url += `&direction=${direction}`;
+
+    const req = new Request(url);
+    const json = await req.loadJSON();
+
+    const departures = json.departures.filter((e) => e.state !== "CANCELLED");
+    return departures;
+  } catch (err) {
+    console.error(err);
+    return { error: err };
+  }
+}
+
+async function present({
   SITE_ID,
   DESTINATION_NAME,
   TRANSPORT,
   LINE,
   DIRECTION,
-}) => {
+}) {
   const SL_PRIMARY_COLOR = "#20252C";
   const SL_PRIMARY_COLOR_DARKER = "#070809";
   const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
@@ -19,67 +75,6 @@ module.exports.present = async ({
   const dateFormatter = new DateFormatter();
   dateFormatter.useShortTimeStyle();
   const usesAMPM = /AM|PM/i.test(dateFormatter.string(new Date()));
-
-  function getIconForTransport(transport) {
-    switch (transport) {
-      case "BUS":
-        return "🚌";
-      case "TRAM":
-        return "🚋";
-      case "METRO":
-        return "🚇";
-      case "TRAIN":
-        return "🚆";
-      case "FERRY":
-        return "⛴";
-      case "SHIP":
-        return "🚢";
-      case "TAXI":
-        return "🚕";
-      default:
-        return "🚦";
-    }
-  }
-
-  function getSwedishNameForTransport(transport) {
-    switch (transport) {
-      case "BUS":
-        return "bus station";
-      case "TRAM":
-        return "spårvagn";
-      case "METRO":
-        return "t-bana";
-      case "TRAIN":
-        return "pendeltåg";
-      case "FERRY":
-        return "färja";
-      case "SHIP":
-        return "båt";
-      case "TAXI":
-        return "taxi";
-      default:
-        return "transport";
-    }
-  }
-
-  async function loadDirectionsData(siteId, transport, line, direction) {
-    try {
-      let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?forecast=60`;
-
-      if (transport) url += `&transport=${transport}`;
-      if (line) url += `&line=${line}`;
-      if (direction) url += `&direction=${direction}`;
-
-      const req = new Request(url);
-      const json = await req.loadJSON();
-
-      const departures = json.departures.filter((e) => e.state !== "CANCELLED");
-      return departures;
-    } catch (err) {
-      console.error(err);
-      return { error: err };
-    }
-  }
 
   const widget = new ListWidget();
   widget.useDefaultPadding();
@@ -223,7 +218,7 @@ module.exports.present = async ({
 
   Script.setWidget(widget);
   Script.complete();
-};
+}
 
 async function getModule(forceUpgrade = false) {
   const scriptUrl = module.exports.upgradeUrl;
@@ -312,6 +307,13 @@ async function getModule(forceUpgrade = false) {
 
   return $mainModule;
 }
+
+module.exports.upgradeUrl =
+  "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js";
+
+module.exports.version = 10;
+
+module.exports.present = present;
 
 module.exports.run = async (args = {}) => {
   // download and import library
