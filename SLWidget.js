@@ -95,6 +95,8 @@ async function present({
   const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
   const ARGS_INTERACTED = "interacted";
 
+  const today = new Date();
+
   const departures = await loadDirectionsData(
     SITE_ID,
     TRANSPORT,
@@ -138,7 +140,14 @@ async function present({
     $header.layoutHorizontally();
     $header.bottomAlignContent();
 
-    const $icon = $header.addText(getIconForTransport(TRANSPORT));
+    let icon = getIconForTransport(TRANSPORT);
+
+    // Little easter egg for J for 25/09
+    if (SITE_ID == "2028" && today.getMonth() === 8 && today.getDate() === 25) {
+      icon = "🎂";
+    }
+
+    const $icon = $header.addText(icon);
     $icon.font = Font.mediumSystemFont(28);
     $icon.textColor = new Color("#FFFFFF");
 
