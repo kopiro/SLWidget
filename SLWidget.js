@@ -40,7 +40,13 @@ function getSwedishNameForTransport(transport) {
   }
 }
 
-async function loadDirectionsData(siteId, transport, line, direction) {
+async function loadDirectionsData(
+  siteId,
+  transport,
+  line,
+  direction,
+  direction_name
+) {
   try {
     let url = `https://transport.integration.sl.se/v1/sites/${siteId}/departures?forecast=60`;
 
@@ -51,7 +57,16 @@ async function loadDirectionsData(siteId, transport, line, direction) {
     const req = new Request(url);
     const json = await req.loadJSON();
 
-    const departures = json.departures.filter((e) => e.state !== "CANCELLED");
+    let departures = json.departures;
+    departures = departures.filter((e) => e.state !== "CANCELLED");
+
+    if (direction_name) {
+      console.log(`Filtering by direction: ${direction_name} (${url})`);
+      departures = departures.filter(
+        (e) => e.destination.toLowerCase() === direction_name.toLowerCase()
+      );
+    }
+
     return departures;
   } catch (err) {
     console.error(err);
@@ -61,10 +76,11 @@ async function loadDirectionsData(siteId, transport, line, direction) {
 
 async function present({
   SITE_ID,
-  DESTINATION_NAME,
   TRANSPORT,
   LINE,
   DIRECTION,
+  DESTINATION_NAME,
+  DIRECTION_NAME,
 }) {
   const SL_PRIMARY_COLOR = "#20252C";
   const SL_PRIMARY_COLOR_DARKER = "#070809";
@@ -98,7 +114,8 @@ async function present({
     SITE_ID,
     TRANSPORT,
     LINE,
-    DIRECTION
+    DIRECTION,
+    DIRECTION_NAME
   );
 
   if (departures.error) {
@@ -311,12 +328,11 @@ async function getModule(forceUpgrade = false) {
 module.exports.upgradeUrl =
   "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js";
 
-module.exports.version = 10;
+module.exports.version = 11;
 
 module.exports.present = present;
 
 module.exports.run = async (args = {}) => {
-  // download and import library
   let widget = await getModule();
   await widget.present(args);
 };

@@ -12,11 +12,16 @@ Open [https://transport.integration.sl.se/v1/sites?expand=true
 
 The only mandatory option is `SITE_ID`, all the rest is optional only if you want to filter even more.
 
-`TRANSPORT` can be one of these: `BUS`, `TRAM`, `METRO`, `TRAIN`, `FERRY`, `SHIP`, `TAXI`.
+- `TRANSPORT` can be one of these: `BUS`, `TRAM`, `METRO`, `TRAIN`, `FERRY`, `SHIP`, `TAXI`.
 
-`LINE` is your Metro line or BUS number.
+- `LINE` is your Metro line or BUS number.
 
-`DIRECTION` can either be `1` or `2`.
+- `DIRECTION` can either be `1` or `2`.
+
+### Even more optional variables
+
+- `DESTINATION_NAME` is the name of your final stop.
+- `DIRECTION_NAME` can be useful if your line occasionally may stops at a midpoint before reaching the final destination, set it only in this case.
 
 ## Installation
 
