@@ -74,6 +74,14 @@ async function loadDirectionsData(
   }
 }
 
+function usesAMPM() {
+  // Get OS hour format (12 or 24)
+  const dateFormatter = new DateFormatter();
+  dateFormatter.useShortTimeStyle();
+  const usesAMPM = /AM|PM/i.test(dateFormatter.string(new Date()));
+  return usesAMPM;
+}
+
 async function present({
   SITE_ID,
   TRANSPORT,
@@ -87,10 +95,13 @@ async function present({
   const SL_PRIMARY_COLOR_LIGHTER = "#0A47C2";
   const ARGS_INTERACTED = "interacted";
 
-  // Get OS hour format (12 or 24)
-  const dateFormatter = new DateFormatter();
-  dateFormatter.useShortTimeStyle();
-  const usesAMPM = /AM|PM/i.test(dateFormatter.string(new Date()));
+  const departures = await loadDirectionsData(
+    SITE_ID,
+    TRANSPORT,
+    LINE,
+    DIRECTION,
+    DIRECTION_NAME
+  );
 
   const widget = new ListWidget();
   widget.useDefaultPadding();
@@ -109,14 +120,6 @@ async function present({
   const $viewStack = widget.addStack();
   $viewStack.layoutVertically();
   $viewStack.centerAlignContent();
-
-  const departures = await loadDirectionsData(
-    SITE_ID,
-    TRANSPORT,
-    LINE,
-    DIRECTION,
-    DIRECTION_NAME
-  );
 
   if (departures.error) {
     const error = $viewStack.addText("Error fetching data");
@@ -161,7 +164,7 @@ async function present({
     let i = 0;
     for (const d of departures) {
       const $display = $viewStack.addDate(new Date(d.expected));
-      const fontSize = i === 0 ? 38 - (usesAMPM ? 12 : 0) : i === 1 ? 22 : 18;
+      const fontSize = i === 0 ? 38 - (usesAMPM() ? 12 : 0) : i === 1 ? 22 : 18;
 
       $display.font = Font.blackSystemFont(fontSize);
       $display.textOpacity = i === 0 ? 1 : 0.7;
@@ -187,9 +190,7 @@ async function present({
     }
   }
 
-  // Used only to refresh widget
   if (args.queryParameters[ARGS_INTERACTED]) {
-    // Create a prompt to show to the user
     const prompt = new Alert();
     prompt.title = `SL Widget v${module.exports.version}`;
 
