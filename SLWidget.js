@@ -354,7 +354,7 @@ async function getModule(forceUpgrade = false) {
   }
 }
 
-module.exports.version = 14;
+module.exports.version = 15;
 module.exports.checkVersionUrl = `https://versions.kopiro.me/sl-widget`;
 module.exports.newVersionScriptUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
 module.exports.present = present;
