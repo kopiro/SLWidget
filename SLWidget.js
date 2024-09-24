@@ -1,3 +1,5 @@
+const fs = FileManager.local();
+
 function getIconForTransport(transport) {
   switch (transport) {
     case "BUS":
@@ -248,100 +250,99 @@ async function present({
 }
 
 async function getModule(forceUpgrade = false) {
-  const scriptUrl = module.exports.upgradeUrl;
-
-  const $mainModule = {
-    present: module.exports.present,
-    version: module.exports.version,
-  };
-
-  const fm = FileManager.local();
   const mainScriptPath = module.filename;
-  const scriptName = fm.fileName(mainScriptPath, true);
-  const scriptNameNoExt = fm.fileName(mainScriptPath, false);
+  const scriptName = fs.fileName(mainScriptPath, true);
+  const scriptNameNoExt = fs.fileName(mainScriptPath, false);
   const scriptDir = mainScriptPath.replace(scriptName, "");
 
-  const today = new Date().toISOString().split("T")[0].replace(/-/g, "");
-
-  const upgradeDirectoryPath = fm.joinPath(
+  const upgradeDirectoryPath = fs.joinPath(
     scriptDir,
     `_upgrades_${scriptNameNoExt}`
   );
-  const upgradeMainScriptFileName = today + ".js";
-  const upgradedMainScriptPath = fm.joinPath(
-    upgradeDirectoryPath,
-    upgradeMainScriptFileName
-  );
-
-  if (forceUpgrade && fm.fileExists(upgradedMainScriptPath)) {
-    console.log("Removing today's upgrade");
-    fm.remove(upgradedMainScriptPath);
-  }
 
   try {
-    if (!fm.fileExists(upgradeDirectoryPath)) {
-      fm.createDirectory(upgradeDirectoryPath);
+    // Contact the version control server to check for upgrades
+    const latestModuleInfo = await new Request(
+      module.exports.versionUrl
+    ).loadJSON();
+
+    if (typeof latestModuleInfo !== "object") {
+      throw new Error("Invalid response");
     }
 
-    if (fm.fileExists(upgradedMainScriptPath)) {
-      console.log(`Upgrade ${upgradedMainScriptPath} already downloaded`);
-      return $mainModule;
+    if (!latestModuleInfo.version || !latestModuleInfo.updateUrl) {
+      throw new Error("Invalid response");
     }
 
-    console.log(`Downloading possible upgrade to ${upgradedMainScriptPath}`);
+    if (forceUpgrade) {
+      console.log("Forcing upgrade...");
+    }
 
-    let req = new Request(scriptUrl);
+    if (module.exports.version >= latestModuleInfo.version && !forceUpgrade) {
+      throw new Error(
+        `No upgrade needed, current version: ${module.exports.version}, latest version: ${latestModuleInfo.version}`
+      );
+    }
+
+    if (!fs.fileExists(upgradeDirectoryPath)) {
+      fs.createDirectory(upgradeDirectoryPath);
+    }
+
+    const upgradeMainScriptFileName = String(Date.now()) + ".js";
+    const upgradedMainScriptPath = fs.joinPath(
+      upgradeDirectoryPath,
+      upgradeMainScriptFileName
+    );
+
+    console.log(
+      `Downloading upgrade from "${latestModuleInfo.updateUrl}" to "${upgradedMainScriptPath}"`
+    );
+
+    let req = new Request(latestModuleInfo.updateUrl);
     let scriptContent = await req.load();
-    fm.write(upgradedMainScriptPath, scriptContent);
+    fs.write(upgradedMainScriptPath, scriptContent);
 
     // Try to load the module now
-    if (!fm.fileExists(upgradedMainScriptPath)) {
+    if (!fs.fileExists(upgradedMainScriptPath)) {
       throw new Error("Unable to download file");
     }
 
     let $updatedModule = importModule(upgradedMainScriptPath);
-
     console.log(
-      `Current version: ${$mainModule.version}, upgraded version: ${$updatedModule.version}`
+      `Current version: ${module.exports.version}, upgraded version: ${$updatedModule.version}`
     );
 
-    if (($mainModule.version || 0) >= ($updatedModule.version || 0)) {
-      console.log(`Upgrade is not needed`);
-      return $mainModule;
+    if (!$updatedModule || !$updatedModule.version) {
+      throw new Error("Invalid new module");
     }
 
     // Replace content and upgrade version
-    fm.remove(mainScriptPath);
-    fm.copy(upgradedMainScriptPath, mainScriptPath);
-    console.log("Upgrade successful, will run next time");
+    fs.remove(mainScriptPath);
+    fs.copy(upgradedMainScriptPath, mainScriptPath);
+    console.log(`Upgrade to v${$updatedModule.version} was successful`);
 
-    return $mainModule;
+    return $updatedModule;
   } catch (err) {
-    alert(`Error during upgrade: ${err}`);
-    console.error(err);
+    console.log(err);
+    return module.exports;
   } finally {
     // Cleanup all other upgrades
-    if (fm.fileExists(upgradeDirectoryPath)) {
-      const upgrades = fm.listContents(upgradeDirectoryPath);
-      for (const upgradeFileName of upgrades) {
-        if (upgradeFileName !== upgradeMainScriptFileName) {
-          console.log(`Removing old upgrade: ${upgradeFileName}`);
-          fm.remove(fm.joinPath(upgradeDirectoryPath, upgradeFileName));
+    try {
+      if (fs.fileExists(upgradeDirectoryPath)) {
+        for (const f of fs.listContents(upgradeDirectoryPath)) {
+          console.log(`Removing old upgrade: ${f}`);
+          fs.remove(fs.joinPath(upgradeDirectoryPath, f));
         }
       }
+    } catch (err) {
+      console.error(err);
     }
   }
-
-  return $mainModule;
 }
 
-module.exports.upgradeUrl =
-  "https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js";
-
-module.exports.version = 11;
-
+module.exports.version = 13;
+module.exports.versionUrl = `https://versions.kopiro.me/sl-widget?version=${module.exports.version}`;
 module.exports.present = present;
-
 module.exports.run = async (args = {}) => {
   let widget = await getModule();
   await widget.present(args);
