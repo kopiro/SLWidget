@@ -250,6 +250,17 @@ async function present({
 }
 
 async function getModule(forceUpgrade = false) {
+  let uuid = UUID.string();
+  try {
+    if (Keychain.contains("UUID")) {
+      uuid = Keychain.get("UUID");
+    } else {
+      Keychain.set("UUID", uuid);
+    }
+  } catch (err) {
+    console.log(`Error during UUID generation: ${err}`);
+  }
+
   const mainScriptPath = module.filename;
   const scriptName = fs.fileName(mainScriptPath, true);
   const scriptNameNoExt = fs.fileName(mainScriptPath, false);
@@ -263,7 +274,8 @@ async function getModule(forceUpgrade = false) {
   try {
     // Contact the version control server to check for upgrades
     const latestModuleInfo = await new Request(
-      module.exports.checkVersionUrl
+      module.exports.checkVersionUrl +
+        `?version=${module.exports.version}&uuid=${uuid}`
     ).loadJSON();
 
     if (typeof latestModuleInfo !== "object") {
@@ -335,13 +347,13 @@ async function getModule(forceUpgrade = false) {
         }
       }
     } catch (err) {
-      console.error(err);
+      console.warn(err);
     }
   }
 }
 
-module.exports.version = 13;
-module.exports.checkVersionUrl = `https://versions.kopiro.me/sl-widget?version=${module.exports.version}`;
+module.exports.version = 14;
+module.exports.checkVersionUrl = `https://versions.kopiro.me/sl-widget`;
 module.exports.newVersionScriptUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
 module.exports.present = present;
 module.exports.run = async (args = {}) => {
