@@ -119,11 +119,18 @@ async function present({
   gradient.locations = [0.0, 1.0];
   gradient.startPoint = new Point(0, 0);
   gradient.endPoint = new Point(0, 1);
-  widget.backgroundGradient = gradient;
 
   const $viewStack = widget.addStack();
   $viewStack.layoutVertically();
   $viewStack.centerAlignContent();
+
+  let icon = getIconForTransport(TRANSPORT);
+
+  // Little easter egg for J for 25/09
+  if (SITE_ID == "2028" && today.getMonth() === 8 && today.getDate() === 25) {
+    icon = "🎂";
+    gradient.colors = [new Color("#FF68B4"), new Color("#F7CADD")];
+  }
 
   if (departures.error) {
     const error = $viewStack.addText("Error fetching data");
@@ -141,13 +148,6 @@ async function present({
     const $header = $viewStack.addStack();
     $header.layoutHorizontally();
     $header.bottomAlignContent();
-
-    let icon = getIconForTransport(TRANSPORT);
-
-    // Little easter egg for J for 25/09
-    if (SITE_ID == "2028" && today.getMonth() === 8 && today.getDate() === 25) {
-      icon = "🎂";
-    }
 
     const $icon = $header.addText(icon);
     $icon.font = Font.mediumSystemFont(28);
@@ -200,6 +200,8 @@ async function present({
       if (++i >= 3) break;
     }
   }
+
+  widget.backgroundGradient = gradient;
 
   if (args.queryParameters[ARGS_INTERACTED]) {
     const prompt = new Alert();
