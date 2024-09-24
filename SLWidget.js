@@ -270,7 +270,7 @@ async function getModule(forceUpgrade = false) {
       throw new Error("Invalid response");
     }
 
-    if (!latestModuleInfo.version || !latestModuleInfo.updateUrl) {
+    if (!latestModuleInfo.version) {
       throw new Error("Invalid response");
     }
 
@@ -295,10 +295,10 @@ async function getModule(forceUpgrade = false) {
     );
 
     console.log(
-      `Downloading upgrade from "${latestModuleInfo.updateUrl}" to "${upgradedMainScriptPath}"`
+      `Downloading upgrade from "${module.exports.newVersionUrl}" to "${upgradedMainScriptPath}"`
     );
 
-    let req = new Request(latestModuleInfo.updateUrl);
+    let req = new Request(module.exports.newVersionUrl);
     let scriptContent = await req.load();
     fs.write(upgradedMainScriptPath, scriptContent);
 
@@ -342,6 +342,7 @@ async function getModule(forceUpgrade = false) {
 
 module.exports.version = 13;
 module.exports.versionUrl = `https://versions.kopiro.me/sl-widget?version=${module.exports.version}`;
+module.exports.newVersionUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
 module.exports.present = present;
 module.exports.run = async (args = {}) => {
   let widget = await getModule();
