@@ -263,7 +263,7 @@ async function getModule(forceUpgrade = false) {
   try {
     // Contact the version control server to check for upgrades
     const latestModuleInfo = await new Request(
-      module.exports.versionUrl
+      module.exports.checkVersionUrl
     ).loadJSON();
 
     if (typeof latestModuleInfo !== "object") {
@@ -295,10 +295,10 @@ async function getModule(forceUpgrade = false) {
     );
 
     console.log(
-      `Downloading upgrade from "${module.exports.newVersionUrl}" to "${upgradedMainScriptPath}"`
+      `Downloading upgrade from "${module.exports.newVersionScriptUrl}" to "${upgradedMainScriptPath}"`
     );
 
-    let req = new Request(module.exports.newVersionUrl);
+    let req = new Request(module.exports.newVersionScriptUrl);
     let scriptContent = await req.load();
     fs.write(upgradedMainScriptPath, scriptContent);
 
@@ -341,8 +341,8 @@ async function getModule(forceUpgrade = false) {
 }
 
 module.exports.version = 13;
-module.exports.versionUrl = `https://versions.kopiro.me/sl-widget?version=${module.exports.version}`;
-module.exports.newVersionUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
+module.exports.checkVersionUrl = `https://versions.kopiro.me/sl-widget?version=${module.exports.version}`;
+module.exports.newVersionScriptUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
 module.exports.present = present;
 module.exports.run = async (args = {}) => {
   let widget = await getModule();
