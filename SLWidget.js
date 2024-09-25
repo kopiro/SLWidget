@@ -1,4 +1,5 @@
 const fs = FileManager.local();
+let uuid = null;
 
 function getIconForTransport(transport) {
   switch (transport) {
@@ -127,7 +128,12 @@ async function present({
   let icon = getIconForTransport(TRANSPORT);
 
   // Little easter egg for J for 25/09
-  if (SITE_ID == "2028" && today.getMonth() === 8 && today.getDate() === 25) {
+  if (
+    (uuid === "8297B830-9270-49BF-9611-74432FD38127" ||
+      uuid === "6390F31E-66CA-4980-934D-493E53B39078") &&
+    today.getMonth() === 8 &&
+    today.getDate() === 25
+  ) {
     icon = "🎂";
     gradient.colors = [new Color("#FF68B4"), new Color("#F7CADD")];
   }
@@ -252,17 +258,6 @@ async function present({
 }
 
 async function getModule(forceUpgrade = false) {
-  let uuid = UUID.string();
-  try {
-    if (Keychain.contains("UUID")) {
-      uuid = Keychain.get("UUID");
-    } else {
-      Keychain.set("UUID", uuid);
-    }
-  } catch (err) {
-    console.log(`Error during UUID generation: ${err}`);
-  }
-
   const mainScriptPath = module.filename;
   const scriptName = fs.fileName(mainScriptPath, true);
   const scriptNameNoExt = fs.fileName(mainScriptPath, false);
@@ -354,11 +349,22 @@ async function getModule(forceUpgrade = false) {
   }
 }
 
-module.exports.version = 15;
+module.exports.version = 16;
 module.exports.checkVersionUrl = `https://versions.kopiro.me/sl-widget`;
 module.exports.newVersionScriptUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
 module.exports.present = present;
 module.exports.run = async (args = {}) => {
+  try {
+    if (Keychain.contains("UUID")) {
+      uuid = Keychain.get("UUID");
+    } else {
+      uuid = UUID.string();
+      Keychain.set("UUID", uuid);
+    }
+  } catch (err) {
+    console.log(`Error during UUID generation: ${err}`);
+  }
+
   let widget = await getModule();
   await widget.present(args);
 };
