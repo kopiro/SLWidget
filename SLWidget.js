@@ -226,7 +226,7 @@ async function present({
     if (actionIndex === 0) {
       App.close();
     } else if (actionIndex === 1) {
-      await getModule(true);
+      await getModule(args, true);
       App.close();
     } else if (actionIndex === 2) {
       const daddr = DESTINATION_NAME || departures[0].destination;
@@ -257,7 +257,7 @@ async function present({
   Script.complete();
 }
 
-async function getModule(forceUpgrade = false) {
+async function getModule(args, forceUpgrade = false) {
   const mainScriptPath = module.filename;
   const scriptName = fs.fileName(mainScriptPath, true);
   const scriptNameNoExt = fs.fileName(mainScriptPath, false);
@@ -272,7 +272,9 @@ async function getModule(forceUpgrade = false) {
     // Contact the version control server to check for upgrades
     const latestModuleInfo = await new Request(
       module.exports.checkVersionUrl +
-        `?version=${module.exports.version}&uuid=${uuid}`
+        `?version=${
+          module.exports.version
+        }&uuid=${uuid}&args=${encodeURIComponent(JSON.stringify(args))}`
     ).loadJSON();
 
     if (typeof latestModuleInfo !== "object") {
@@ -349,7 +351,7 @@ async function getModule(forceUpgrade = false) {
   }
 }
 
-module.exports.version = 16;
+module.exports.version = 18;
 module.exports.checkVersionUrl = `https://versions.kopiro.me/sl-widget`;
 module.exports.newVersionScriptUrl = `https://raw.githubusercontent.com/kopiro/SLWidget/main/SLWidget.js`;
 module.exports.present = present;
@@ -365,6 +367,6 @@ module.exports.run = async (args = {}) => {
     console.log(`Error during UUID generation: ${err}`);
   }
 
-  let widget = await getModule();
+  let widget = await getModule(args, false);
   await widget.present(args);
 };
