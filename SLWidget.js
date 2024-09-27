@@ -127,7 +127,6 @@ async function present({
 
   let icon = getIconForTransport(TRANSPORT);
 
-  // Little easter egg for J for 25/09
   if (
     (uuid === "8297B830-9270-49BF-9611-74432FD38127" ||
       uuid === "6390F31E-66CA-4980-934D-493E53B39078") &&
@@ -245,10 +244,7 @@ async function present({
   }
 
   // Override what the script does
-  widget.url = `scriptable:///run/${encodeURIComponent(
-    Script.name()
-  )}?${ARGS_INTERACTED}=1`;
-
+  widget.url = URLScheme.forRunningScript() + `?${ARGS_INTERACTED}=1`;
   if (config.runsInApp) {
     widget.presentSmall();
   }
