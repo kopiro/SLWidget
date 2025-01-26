@@ -127,16 +127,6 @@ async function present({
 
   let icon = getIconForTransport(TRANSPORT);
 
-  if (
-    (uuid === "8297B830-9270-49BF-9611-74432FD38127" ||
-      uuid === "6390F31E-66CA-4980-934D-493E53B39078") &&
-    today.getMonth() === 8 &&
-    today.getDate() === 25
-  ) {
-    icon = "🎂";
-    gradient.colors = [new Color("#FF68B4"), new Color("#F7CADD")];
-  }
-
   if (departures.error) {
     const error = $viewStack.addText("Error fetching data");
     error.font = Font.boldSystemFont(16);
